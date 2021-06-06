@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500&family=Zen+Dots&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="./fontawesome-free-5.15.2-web/css/all.min.css">
+  <title>Document</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #space {
+      position: absolute;
+      width: 100vw;
+    }
+
+    #rocket {
+      position: absolute;
+      bottom: -30vh;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 30vh;
+    }
+
+    #exhaust {
+      position: absolute;
+      bottom: -15vh;
+      left: 50%;
+      transform: translate(-50%, 100%);
+      width: 2vw;
+    }
+
+    #gas {
+      position: absolute;
+      bottom: 0%;
+      left: 50%;
+      transform: translate(-50%, 100%);
+      width: 100vw;
+    }
+
+    #btnStart,
+    #btnAgain {
+      position: absolute;
+      bottom: 10%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 26px;
+      background-color: black;
+      border: none;
+      width: 10vw;
+      height: 5vh;
+      border-radius: 20px;
+      z-index: 3;
+      font-family: 'Zen Dots', cursive;
+      display: none;
+    }
+
+    #btnStart:hover,
+    #btnAgain:hover {
+      background: yellow;
+      color: black;
+    }
+
+    #rules {
+      position: absolute;
+      top: 70%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgb(0, 0, 0);
+      font-size: 26px;
+      border: none;
+      width: 35vw;
+      height: 20vh;
+      display: none;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    .text {
+      position: absolute;
+      color: white;
+      font-size: 20px;
+      margin: 10px;
+      font-family: 'Zen Dots', 'Noto Sans TC';
+    }
+
+    .meteorite {
+      position: absolute;
+      transform-origin: center center;
+    }
+
+    .light {
+      position: absolute;
+      background: white;
+      bottom: 20vh;
+      left: 50%;
+      transform-origin: center top;
+      transform: translateX(-50%);
+      width: 0.2vw;
+      border-radius: 10px;
+      box-shadow:
+        0 0 10px 5px rgba(98, 98, 247, 0.274),
+        0 0 10px 5px rgba(0, 0, 255, 0.274),
+        0 0 10px 5px rgba(0, 0, 255, 0.274),
+        0 0 10px 5px rgba(220, 220, 241, 0.274);
+    }
+
+    .lightYello {
+      background: yellow;
+      box-shadow:
+        0 0 10px 5px rgba(255, 208, 0, 0.808),
+        0 0 10px 5px rgba(228, 255, 78, 0.274),
+        0 0 10px 5px rgba(255, 238, 0, 0.767),
+        0 0 10px 5px rgba(255, 251, 39, 0.87);
+    }
+
+    .yellowGun,
+    .hourglass {
+      position: absolute;
+    }
+
+    @keyframes animationM {
+      from {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes animationP {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.5);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+  </style>
+</head>
+
+<body onload="animateStart()">
+  <div id="game">
+    <img src="./space.png" id="space" />
+    <img src="./exhaust.png" id="exhaust" />
+    <img src="./gas.png" id="gas" />
+    <img src="./rocket.png" id="rocket" draggable="false" />
+    <input type="button" value="Start" id="btnStart" />
+    <input type="button" value="Again" id="btnAgain" />
+    <div class="light"></div>
+    <p id="rules">
+      進入遊戲後，滑鼠左右移動控制火箭，長按左鍵可發出光波，擊落隕石即得分。
+      <i class="fas fa-exclamation-circle">禁止拖曳火箭，不然會發生可怕的事!!!</i>
+    </p>
+    <div class="text">
+      <span id="text-score">Score:0</span>
+      <br />
+      <span id="text-time">Time:30</span>
+      <br />
+      <span id="recordholder">Record Holder:</span>
+      <br />
+      <span id="highestscore">Highest Score:</span>
+    </div>
+  </div>
+  <script src="./jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+  <script>
+    let score = 0
+    let countdown = 30
+    let timer = 0
+    let height = 0
+    let addLight = true
+    let mousemove = true
+    let lightX = 0
+    let lightY = 0
+    let meteoriteX = 0
+    let meteoriteY = 0
+    let disX = 0
+    let disY = 0
+    let level = 1
+    let highscore = { name: '', score: 0 }
+    let play = 0
+
+    const highStorage = JSON.parse(localStorage.getItem('wam'))
+    if (highStorage !== null) {
+      highscore = highStorage
+      $('#recordholder').text('Record Holder:' + highscore.name)
+      $('#highestscore').text('Highest Score:' + highscore.score)
+    }
+    const animateStart = () => {
+      $('#btnAgain').hide()
+      $('.light').hide()
+      $('#space').animate({ top: '-30%' }, 2000)
+      $('#rocket').animate(
+        {
+          bottom: '60%'
+        },
+        2000
+      )
+      $('#exhaust').animate(
+        {
+          bottom: '75%'
+        },
+        2000
+      )
+      $('#gas').animate(
+        {
+          bottom: '70%'
+        },
+        3000,
+        function () {
+          $('#btnStart').show()
+          $('#rules').show()
+        }
+      )
+    }
+
+    const onclickStart = () => {
+      $('#space').animate(
+        {
+          top: '-60%'
+        },
+        2000
+      )
+      $('#rocket').animate(
+        {
+          bottom: '100%'
+        },
+        2000,
+        function () {
+          $('#rocket').css('bottom', '5vh').css('height', '15vh')
+        }
+      )
+      $('#exhaust').animate(
+        {
+          bottom: '110%'
+        },
+        2000
+      )
+      $('#gas').animate(
+        {
+          bottom: '130%'
+        },
+        3000,
+        function () {
+          $('#btnStart').hide()
+          $('#btnAgain').hide()
+          $('#rules').hide()
+          $('#exhaust').hide()
+          $('#gas').hide()
+          $('.text').show()
+        }
+      )
+    }
+
+    const move = (meteorite) => {
+      meteorite.animate(
+        {
+          left: Math.round(Math.random() * 100) + 'vw',
+          top: Math.round(Math.random() * 80) + 'vh'
+        },
+        5000,
+        function () {
+          move(meteorite)
+        }
+      )
+    }
+
+    const mouseMoving = () => {
+      if (mousemove == false) return
+      $('#game').mousemove(function (event) {
+        $('#rocket').css('left', event.pageX + 'px')
+        $('.light').css('left', event.pageX + 'px')
+      })
+    }
+
+    $('#btnStart').click(function () {
+      onclickStart()
+      score = 0
+      $('#text-score').text(`Score:${score}`)
+      countdown = 30
+      $('#text-time').text(`Time:${countdown}`)
+      setTimeout(() => {
+        timer = setInterval(game, 1000)
+      }, 2000)
+    })
+
+    $('#btnAgain').click(function () {
+      $('#btnAgain').hide()
+      $('.light').removeClass('lightYello')
+      score = 0
+      height = 0
+      level = 1
+      $('#text-score').text(`Score:${score}`)
+      countdown = 30
+      $('#text-time').text(`Time:${countdown}`)
+      setTimeout(() => {
+        timer = setInterval(game, 1000)
+      }, 2000)
+    })
+
+    const game = () => {
+      countdown--
+      mouseMoving()
+      $('#text-time').text(`Time:${countdown}`)
+
+      if (countdown <= 0) {
+        countdown = 0
+        $('#btnAgain').show()
+        clearInterval(timer)
+        height = 0
+        addLight = false
+        mousemove = false
+        $('.light').animate(
+          {
+            height: 0 + 'vh'
+          },
+          10,
+          function () {
+            $('.light').hide()
+            if (countdown == 0) return
+            addLight = true
+            mousemove = true
+          }
+        )
+        $('.yellowGun').remove()
+        $('.hourglass').remove()
+        $('.meteorite').remove()
+        Swal.fire({
+          icon: 'info',
+          title: '時間到',
+          text: `你得到 ${score} 分`
+        })
+        if (score > highscore.score) {
+          highscore.score = score
+          highscore.name = prompt('最高分! 請輸入名字')
+          if (highscore.name === null || highscore.name.length === 0) {
+            $('#recordholder').text('Record Holder:null')
+          }
+          $('#recordholder').text('Record Holder:' + highscore.name)
+          $('#highestscore').text('Highest Score:' + highscore.score)
+          localStorage.setItem('wam', JSON.stringify(highscore))
+        }
+        return
+      }
+
+
+
+      let randQuantity = Math.round(Math.random() * 20)
+      let meteoriteRandX = Math.round(Math.random() * 60) + 20
+      let meteoriteRandY = Math.round(Math.random() * 60) + 20
+      let yellowGunX = Math.round(Math.random() * 60) + 20
+      let yellowGunY = Math.round(Math.random() * 60) + 20
+      let hourglassX = Math.round(Math.random() * 60) + 20
+      let hourglassY = Math.round(Math.random() * 60) + 20
+
+      if (randQuantity > 2 && $('#game .meteorite').length < 15) {
+        const meteorite = $(`<img src="./meteorite.png" class="meteorite"
+                    style="left:${meteoriteRandX}vw;top:${meteoriteRandY}vh;
+                    width:60px;height:60px;animation: animationM 5s infinite forwards;">`)
+        $('#game').append(meteorite)
+        move(meteorite)
+      }
+
+      if (randQuantity > 10 && $('#game .yellowGun').length < 1) {
+        const yellowGun = $(`<img src="./yellogun.png" class="yellowGun"
+                    style="left:${yellowGunX}vw;top:${yellowGunY}vh;
+                    width:50px;animation: animationP 2s infinite forwards;">`)
+        $('#game').append(yellowGun)
+      }
+
+      if (randQuantity > 10 && $('#game .hourglass').length < 1) {
+        const hourglass = $(`<img src="./hourglass.png" class="hourglass"
+                    style="left:${hourglassX}vw;top:${hourglassY}vh;
+                    width:50px;animation: animationP 2s infinite forwards;">`)
+        $('#game').append(hourglass)
+      }
+    }
+
+    function addheight(speed) {
+      height++
+      $('.light').show().animate(
+        {
+          height: height * speed + 'vh'
+        },
+        50
+      )
+    }
+
+    $('#game').on('mousedown', '#rocket', function () {
+      if (addLight == false) return
+      mousemove = false
+      addLight = false
+
+      if (level == 1) {
+        timer2 = setInterval(function () {
+          addheight(1)
+        }, 50)
+      }
+
+      if (level == 2) {
+        timer2 = setInterval(function () {
+          addheight(2)
+        }, 50)
+      }
+
+      $('#game').on('mouseup', '#rocket', function () {
+        clearInterval(timer2)
+        lightX = $('.light').offset().left
+        lightY = $('.light').offset().top - 20
+
+        for (i = 0; i < $('#game .meteorite').length; i++) {
+          meteoriteX = $('.meteorite').eq(i).offset().left + 30
+          meteoriteY = $('.meteorite').eq(i).offset().top + 60
+          lightMdisX = Math.abs(lightX - meteoriteX)
+          lightMdisY = Math.floor(lightY - meteoriteY)
+          if (lightMdisX < 30 && lightMdisY <= 0) {
+            $('.meteorite').eq(i).remove()
+            score++
+            $('#text-score').text(`Score:${score}`)
+          }
+        }
+
+        if ($('#game .yellowGun').length > 0) {
+          yellowGunX = $('.yellowGun').offset().left + 30
+          yellowGunY = $('.yellowGun').offset().top + 60
+          lightGdisX = Math.abs(lightX - yellowGunX)
+          lightGdisY = Math.floor(lightY - yellowGunY)
+          if (lightGdisX < 30 && lightGdisY <= 0) {
+            $('.yellowGun').remove()
+            $('.light').addClass('lightYello')
+            level = 2
+          }
+        }
+
+        if ($('#game .hourglass').length > 0) {
+          hourglassX = $('.hourglass').offset().left + 30
+          hourglassY = $('.hourglass').offset().top + 60
+          lightHdisX = Math.abs(lightX - hourglassX)
+          lightHdisY = Math.floor(lightY - hourglassY)
+          if (lightHdisX < 30 && lightHdisY <= 0) {
+            $('.hourglass').animate({
+              top: 0,
+              left: 0
+            }, 1000, function () {
+              countdown += 30
+              $('.hourglass').remove()
+            })
+          }
+        }
+
+        height = 0
+        $('.light').animate(
+          {
+            height: 0 + 'vh'
+          },
+          10,
+          function () {
+            $('.light').hide()
+            if (countdown == 0) return
+            addLight = true
+            mousemove = true
+          }
+        )
+      })
+    })
+  </script>
+</body>
+
+</html>
